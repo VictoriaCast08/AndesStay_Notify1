@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # NODO 1 DE RABBITMQ (Nodo Principal)
+  rabbitmq-node1:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-node1
+    hostname: rabbitmq-node1
+    ports:
+      - "5672:5672"    # Puerto AMQP
+      - "15672:15672"  # Consola Web de Administración
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "SECRET_COOKIE_CLUSTER_DESA"
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NODO 2 DE RABBITMQ (Nodo Réplica para el Clúster)
+  rabbitmq-node2:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-node2
+    hostname: rabbitmq-node2
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "SECRET_COOKIE_CLUSTER_DESA"
+    depends_on:
+      rabbitmq-node1:
+        condition: service_healthy
+
+  # MICROSERVICIO NOTIFY (Se conecta al puerto 5672 del clúster)
+  notify-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ms-andesstay-notify
+    ports:
+      - "8084:8084"
+    environment:
+      - RABBITMQ_HOST=rabbitmq-node1
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASS=guest
+      - SPRING_PROFILES_ACTIVE=local
+    depends_on:
+      rabbitmq-node1:
+        condition: service_healthy
