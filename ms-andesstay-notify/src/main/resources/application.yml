@@ -5,6 +5,14 @@ spring:
     default: azure
   config:
     import: optional:file:./.env
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual # Habilita ACK/NACK explícito
 
 server:
   port: 8084

@@ -1,37 +1,41 @@
 package cl.duoc.andesstay.notify.service;
 
+import cl.duoc.andesstay.notify.config.RabbitTopology;
+import cl.duoc.andesstay.notify.dto.NotificationRequest;
+import cl.duoc.andesstay.notify.producer.NotificationProducer;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-/**
- * Esqueleto: colas del caso email / housekeeping / voucher via RabbitMQ.
- * En EP1 se registra el envelope; la publicacion AMQP se activa con el broker.
- */
 @Service
 public class NotificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
-    private final ConcurrentLinkedQueue<Map<String, Object>> queue = new ConcurrentLinkedQueue<>();
+    private final NotificationProducer notificationProducer;
     private final AtomicLong sequence = new AtomicLong();
 
-    public String enqueue(Map<String, Object> payload) {
-        String ticket = "NTF-" + sequence.incrementAndGet();
-        queue.add(payload);
-        log.info("Enqueue notification {} type={}", ticket, payload.get("type"));
-        return ticket;
+    public NotificationService(NotificationProducer notificationProducer) {
+        this.notificationProducer = notificationProducer;
     }
 
-    public Map<String, Object> stats() {
-        return Map.of(
-                "service", "ms-andesstay-notify",
-                "queueSize", queue.size(),
-                "topology", Map.of(
-                        "q.cmd.email", "email/push huesped",
-                        "q.cmd.housekeeping", "ticket limpieza",
-                        "q.cmd.voucher", "PDF voucher"));
+    public String enqueue(NotificationRequest request) {
+        String ticket = "NTF-" + sequence.incrementAndGet();
+
+        String routingKey = switch (request.getType().toLowerCase()) {
+            case "housekeeping" -> RabbitTopology.Q_HOUSEKEEPING;
+            case "voucher" -> RabbitTopology.Q_VOUCHER;
+            default -> RabbitTopology.Q_EMAIL;
+        };
+
+        Map<String, Object> payload = Map.of(
+                "ticket", ticket,
+                "type", request.getType(),
+                "message", request.getMessage(),
+                "recipient", request.getRecipient() != null ? request.getRecipient() : "N/A"
+        );
+
+        // Llama al productor dedicado
+        notificationProducer.sendNotification(routingKey, payload);
+
+        return ticket;
     }
 }
