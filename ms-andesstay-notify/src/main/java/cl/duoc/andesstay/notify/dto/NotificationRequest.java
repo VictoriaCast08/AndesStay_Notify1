@@ -2,6 +2,7 @@ package cl.duoc.andesstay.notify.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+// DTO para representar el payload de las notificaciones
 public class NotificationRequest {
 
     @NotBlank(message = "El tipo de notificacion es obligatorio")

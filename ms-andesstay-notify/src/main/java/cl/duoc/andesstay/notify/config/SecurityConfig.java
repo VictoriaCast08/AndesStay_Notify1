@@ -33,6 +33,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+// Mapea los roles desde el token JWT
 @Component
 class JwtRoleConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
@@ -60,19 +61,23 @@ public class SecurityConfig {
         this.jwtRoleConverter = jwtRoleConverter;
     }
 
+    // Configuración para desarrollo local
     @Bean
     @Profile("local")
     SecurityFilterChain localSecurityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(csrf -> csrf.disable())
+        return http
+                .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .build();
     }
 
+    // Configuración de seguridad con Azure AD
     @Bean
     @Profile("azure")
     SecurityFilterChain azureSecurityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(csrf -> csrf.disable())
+        return http
+                .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health").permitAll()
@@ -87,6 +92,7 @@ public class SecurityConfig {
                 .build();
     }
 
+    // Configuración de CORS
     @Bean
     CorsConfigurationSource corsConfigurationSource(
             @Value("${andesstay.cors.allowed-origins:http://localhost:4200}") String origins) {
@@ -99,6 +105,7 @@ public class SecurityConfig {
         return source;
     }
 
+    // Validador de firma y audiencia del JWT
     @Bean
     @Profile("azure")
     JwtDecoder azureJwtDecoder(

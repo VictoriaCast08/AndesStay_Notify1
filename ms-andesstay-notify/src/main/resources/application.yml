@@ -6,8 +6,8 @@ spring:
   config:
     import: optional:file:./.env
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    # Soporte para clúster de 2 nodos en alta disponibilidad
+    addresses: ${RABBITMQ_ADDRESSES:${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASS:guest}
     listener:

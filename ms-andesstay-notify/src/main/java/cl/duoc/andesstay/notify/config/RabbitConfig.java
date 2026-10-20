@@ -9,7 +9,15 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitConfig {
 
-    // --- Converter para enviar objetos JSON en las colas ---
+    // --- CONSTANTES DE TOPOLOGÍA ---
+    public static final String EXCHANGE_CMD_DIRECT = "ex.andesstay.cmd";
+    public static final String EXCHANGE_DEAD = "ex.andesstay.dlx";
+
+    public static final String Q_EMAIL = "q.cmd.email";
+    public static final String Q_EMAIL_DLQ = "q.cmd.email.dlq";
+    public static final String RK_EMAIL = "rk.cmd.email";
+
+    // --- CONVERTER JSON ---
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -18,33 +26,36 @@ public class RabbitConfig {
     // --- EXCHANGES ---
     @Bean
     public DirectExchange cmdDirectExchange() {
-        return new DirectExchange(RabbitTopology.EXCHANGE_CMD_DIRECT);
+        return new DirectExchange(EXCHANGE_CMD_DIRECT);
     }
 
     @Bean
     public DirectExchange deadLetterExchange() {
-        return new DirectExchange(RabbitTopology.EXCHANGE_DEAD);
+        return new DirectExchange(EXCHANGE_DEAD);
     }
 
-    // --- DLQs (Dead Letter Queues) ---
+    // --- DEAD LETTER QUEUE (DLQ) ---
     @Bean
     public Queue emailDlq() {
-        return QueueBuilder.durable(RabbitTopology.Q_EMAIL_DLQ).build();
+        return QueueBuilder.durable(Q_EMAIL_DLQ)
+                .quorum() // Replicación en el clúster de 2 nodos
+                .build();
     }
 
     @Bean
     public Binding emailDlqBinding() {
         return BindingBuilder.bind(emailDlq())
                 .to(deadLetterExchange())
-                .with(RabbitTopology.Q_EMAIL_DLQ);
+                .with(Q_EMAIL_DLQ);
     }
 
     // --- COLA PRINCIPAL (Conectada a DLQ) ---
     @Bean
     public Queue emailQueue() {
-        return QueueBuilder.durable(RabbitTopology.Q_EMAIL)
-                .withArgument("x-dead-letter-exchange", RabbitTopology.EXCHANGE_DEAD)
-                .withArgument("x-dead-letter-routing-key", RabbitTopology.Q_EMAIL_DLQ)
+        return QueueBuilder.durable(Q_EMAIL)
+                .quorum() // Replicación en el clúster de 2 nodos
+                .withArgument("x-dead-letter-exchange", EXCHANGE_DEAD)
+                .withArgument("x-dead-letter-routing-key", Q_EMAIL_DLQ)
                 .build();
     }
 
@@ -52,6 +63,6 @@ public class RabbitConfig {
     public Binding emailBinding() {
         return BindingBuilder.bind(emailQueue())
                 .to(cmdDirectExchange())
-                .with(RabbitTopology.Q_EMAIL);
+                .with(RK_EMAIL);
     }
 }

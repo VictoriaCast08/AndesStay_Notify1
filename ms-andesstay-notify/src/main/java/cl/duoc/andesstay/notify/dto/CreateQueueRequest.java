@@ -2,6 +2,7 @@ package cl.duoc.andesstay.notify.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+// DTO para la creación dinámica de colas vía REST
 public class CreateQueueRequest {
 
     @NotBlank(message = "El nombre de la cola es obligatorio")
