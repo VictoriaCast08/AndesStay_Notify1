@@ -7,8 +7,8 @@ services:
     container_name: rabbitmq-node1
     hostname: rabbitmq-node1
     ports:
-      - "5672:5672"    # Puerto AMQP
-      - "15672:15672"  # Consola Web de Administración
+      - "5672:5672"   # Puerto AMQP Principal
+      - "15672:15672" # Consola Web
     environment:
       RABBITMQ_ERLANG_COOKIE: "SECRET_COOKIE_CLUSTER_DESA"
       RABBITMQ_DEFAULT_USER: guest
@@ -33,7 +33,7 @@ services:
       rabbitmq-node1:
         condition: service_healthy
 
-  # MICROSERVICIO NOTIFY (Se conecta al puerto 5672 del clúster)
+  # MICROSERVICIO NOTIFY
   notify-service:
     build:
       context: .
@@ -46,7 +46,9 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASS=guest
-      - SPRING_PROFILES_ACTIVE=local
+      - SPRING_PROFILES_ACTIVE=azure
+      - AZURE_ISSUER_URI=${AZURE_ISSUER_URI}
+      - AZURE_AUDIENCE=${AZURE_AUDIENCE}
     depends_on:
       rabbitmq-node1:
         condition: service_healthy
