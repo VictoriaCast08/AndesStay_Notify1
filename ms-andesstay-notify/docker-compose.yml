@@ -7,12 +7,12 @@ services:
     container_name: rabbitmq-node1
     hostname: rabbitmq-node1
     ports:
-      - "5672:5672"   # Puerto AMQP Principal
+      - "5672:5672"   # Puerto AMQP Principal para que EC2 #1 se conecte a la IP 13.216.115.187
       - "15672:15672" # Consola Web
     environment:
       RABBITMQ_ERLANG_COOKIE: "SECRET_COOKIE_CLUSTER_DESA"
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -39,16 +39,26 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: ms-andesstay-notify
+    env_file:
+      - .env
     ports:
       - "8084:8084"
     environment:
+      - SPRING_PROFILES_ACTIVE=azure
+      # Dentro de la EC2 #2, Notify se conecta internamente a "rabbitmq-node1"
+      - SPRING_RABBITMQ_HOST=rabbitmq-node1
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASS:-guest}
       - RABBITMQ_HOST=rabbitmq-node1
       - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASS=guest
-      - SPRING_PROFILES_ACTIVE=azure
+      - RABBITMQ_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_PASS=${RABBITMQ_PASS:-guest}
       - AZURE_ISSUER_URI=${AZURE_ISSUER_URI}
       - AZURE_AUDIENCE=${AZURE_AUDIENCE}
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
     depends_on:
       rabbitmq-node1:
         condition: service_healthy

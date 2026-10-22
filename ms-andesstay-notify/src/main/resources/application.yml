@@ -4,12 +4,12 @@ spring:
   profiles:
     default: azure
   config:
-    import: optional:file:./.env
+    import: optional:file:.env[.properties]
   rabbitmq:
-    # Soporte para clúster de 2 nodos en alta disponibilidad
-    addresses: ${RABBITMQ_ADDRESSES:${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASS:guest}
+    # Soporte para clúster de 2 nodos en alta disponibilidad (toma las variables del .env)
+    addresses: ${RABBITMQ_ADDRESSES:${SPRING_RABBITMQ_HOST:localhost}:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:${RABBITMQ_USER:guest}}
+    password: ${SPRING_RABBITMQ_PASSWORD:${RABBITMQ_PASS:guest}}
     listener:
       simple:
         acknowledge-mode: manual # Habilita ACK/NACK explícito
@@ -26,9 +26,9 @@ management:
 andesstay:
   azure:
     issuer-uri: ${AZURE_ISSUER_URI:https://login.microsoftonline.com/35442bb9-6147-4555-8ac7-7aea33ca4c73/v2.0}
-    audience: ${AZURE_AUDIENCE:api://5bf59bf1-a4c7-4169-975d-8976a17e9b60}
+    audience: ${AZURE_AUDIENCE:api://6a84e40b-9b22-40e4-b05a-16b64df43827}
   cors:
-    allowed-origins: ${ANDESSTAY_CORS_ORIGINS:http://127.0.0.1:4200,http://localhost:4200,http://localhost:5173}
+    allowed-origins: ${ANDESSTAY_CORS_ORIGINS:http://127.0.0.1:4200,http://localhost:4200,http://localhost:5173,https://dj58a09m4k.execute-api.us-east-1.amazonaws.com}
 
 ---
 spring:
@@ -50,7 +50,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${AZURE_ISSUER_URI:http://localhost/unused}
+          issuer-uri: http://localhost/unused
 
 andesstay:
   azure:
